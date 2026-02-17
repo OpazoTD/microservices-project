@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+postgres_data/
+mysql_data/
+mongo_data/
+*.log

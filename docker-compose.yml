@@ -1,0 +1,187 @@
+
+services:
+
+  # ==================== DATABASES ====================
+
+  postgres:
+    image: postgres:16
+    container_name: ms-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: usuarios_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d usuarios_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mysql:
+    image: mysql:8.0
+    container_name: ms-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: productos_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ms-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-padmin123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mongodb:
+    image: mongo:7.0
+    container_name: ms-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ms-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== MICROSERVICIOS ====================
+
+  usuarios-ms:
+    build:
+      context: ./backend/usuarios-ms
+      dockerfile: Dockerfile
+    container_name: ms-usuarios
+    restart: always
+    command: node dist/src/main.js 
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://admin:admin123@postgres:5432/usuarios_db"
+      TCP_PORT: "3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ms-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3001 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  productos-ms:
+    build:
+      context: ./backend/productos-ms
+      dockerfile: Dockerfile
+    container_name: ms-productos
+    restart: always
+    command: node dist/main.js
+    ports:
+      - "3002:3002"
+      - "3004:3004"
+ 
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: admin
+      DB_PASSWORD: admin123
+      DB_NAME: productos_db
+      TCP_PORT: "3004"
+      HTTP_PORT: "3002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ms-network
+    healthcheck:
+      # Probamos con un comando más simple que suele fallar menos
+      test: ["CMD-SHELL", "node -e \"require('net').connect(3002, '127.0.0.1').on('error', () => process.exit(1)).on('connect', () => process.exit(0))\""]
+      interval: 20s      # Espera 20 segundos entre cada intento
+      timeout: 10s       # Da 10 segundos para responder
+      retries: 10        # Intenta 10 veces antes de rendirse
+      start_period: 60s  # DURANTE EL PRIMER MINUTO, NO LO MARQUES COMO UNHEALTHY
+
+  facturas-ms:
+    build:
+      context: ./backend/facturas-ms
+      dockerfile: Dockerfile
+    container_name: ms-facturas
+    command: node dist/src/main.js
+    restart: always
+    ports:
+      - "3003:3003"
+    environment:
+      MONGODB_URI: "mongodb://admin:admin123@mongodb:27017/facturas_db?authSource=admin"
+      TCP_PORT: "3003"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ms-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3003 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ==================== GATEWAY ====================
+
+  gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: ms-gateway
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      MS_USER_HOST: usuarios-ms
+      MS_USER_PORT: "3001"
+      MS_PRODUCT_HOST: productos-ms
+      MS_PRODUCT_PORT: "3002"
+      MS_INVOICE_HOST: facturas-ms
+      MS_INVOICE_PORT: "3003"
+      JWT_SECRET: "tu_jwt_secret_aqui"
+    depends_on:
+      usuarios-ms:
+        condition: service_healthy
+      productos-ms:
+        condition: service_healthy
+      facturas-ms:
+        condition: service_healthy
+    networks:
+      - ms-network
+
+volumes:
+  postgres_data:
+  mysql_data:
+  mongo_data:
+
+networks:
+  ms-network:
+    driver: bridge

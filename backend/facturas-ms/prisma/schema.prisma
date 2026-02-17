@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+model Factura {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+
+  usuarioId   String
+  nombreUser  String
+  emailUser   String
+
+  productos   ProductoFactura[]
+
+  total       Float
+  estado      String    @default("completada")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+type ProductoFactura {
+  productoId  String
+  nombre      String
+  cantidad    Int
+  precioUnit  Float
+  subtotal    Float
+}
