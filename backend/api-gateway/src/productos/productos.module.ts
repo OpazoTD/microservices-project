@@ -1,17 +1,23 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ProductosController } from './productos.controller';
 
 @Module({
   imports: [
-    ClientsModule.register([
+    ConfigModule,
+    ClientsModule.registerAsync([
       {
         name: 'PRODUCTOS_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: process.env.PRODUCTOS_MS_HOST || 'localhost',
-          port: Number(process.env.PRODUCTOS_MS_PORT) || 3002,
-        },
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: config.get<string>('MS_PRODUCT_HOST', '127.0.0.1'),
+            port: config.get<number>('MS_PRODUCT_PORT', 3004),
+          },
+        }),
       },
     ]),
   ],

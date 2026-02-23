@@ -1,67 +1,41 @@
-
-
-//   @Post('login')
-//   @ApiOperation({ summary: 'Login y obtención de Token JWT' })
-//   login(@Body() data: any) {
-//     // Aquí llamarás a tu servicio de JWT local
-//     return { message: 'Ruta de login pendiente de lógica JWT local' };
-//   }
-
 import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  UseGuards, 
-  Request, 
-  Inject 
+  Controller, Post, Body, Get, UseGuards, Request, Inject, HttpStatus 
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
-@ApiTags('Auth')
+// CAMBIO AQUÍ: Importación local desde la carpeta que creamos
+import { IniciarSesionDto } from './dto/iniciar-sesion.dto';
+// Nota: RegistrarUsuarioDto suele estar en el módulo de usuarios, 
+// pero si lo necesitas aquí, asegúrate de que el archivo exista en auth/dto/
+import { RegistrarUsuarioDto } from '../usuarios/dto/registrar-usuario.dto'; 
+
+@ApiTags('🔐 Autenticación')
 @Controller('auth')
 export class AuthController {
   constructor(
-    @Inject('USUARIOS_SERVICE') 
-    private readonly usuariosClient: ClientProxy,
+    @Inject('USUARIOS_SERVICE') private readonly usuariosClient: ClientProxy,
     private readonly authService: AuthService,
   ) {}
 
-  // ========================
-  // REGISTRO
-  // ========================
   @Post('register')
   @ApiOperation({ summary: 'Registro de nuevo usuario' })
-  register(
-    @Body() body: { nombre: string; email: string; password: string }
-  ) {
-    return this.usuariosClient.send(
-      { cmd: 'crear_usuario' }, 
-      body
-    );
+  async register(@Body() dto: RegistrarUsuarioDto) {
+    return this.usuariosClient.send({ cmd: 'crear_usuario' }, dto);
   }
 
-  // ========================
-  // LOGIN
-  // ========================
   @Post('login')
   @ApiOperation({ summary: 'Login y obtención de Token JWT' })
-  login(
-    @Body() body: { email: string; password: string }
-  ) {
-    return this.authService.login(body);
+  async login(@Body() dto: IniciarSesionDto) {
+    // El servicio authService se encarga de generar el JWT
+    return this.authService.login(dto);
   }
 
-  // ========================
-  // PERFIL (PROTEGIDO)
-  // ========================
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
   getProfile(@Request() req: any) {
     return req.user;
   }

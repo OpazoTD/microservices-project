@@ -1,55 +1,47 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-  Inject,
-  Request,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { ForbiddenException } from '@nestjs/common';
 
 @ApiTags('Usuarios')
 @Controller('usuarios')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UsuariosController {
   constructor(
-    @Inject('USUARIOS_SERVICE')
-    private readonly usuariosClient: ClientProxy,
+    @Inject('USUARIOS_SERVICE') private readonly client: ClientProxy
   ) {}
 
-  // SOLO ADMIN puede crear usuarios manualmente
-  @Post()
-  @Roles('admin')
-  create(@Body() createUsuarioDto: any) {
-    return this.usuariosClient.send('create_usuario', createUsuarioDto);
+  @Post('registrar')
+  @ApiOperation({ summary: 'Registrar un nuevo usuario' })
+  async registrar(@Body() data: any) {
+    return this.client.send({ cmd: 'crear_usuario' }, data);
   }
 
-  // SOLO ADMIN puede ver todos los usuarios
   @Get()
-  @Roles('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ADMIN')
+  @ApiBearerAuth()
   findAll() {
-    return this.usuariosClient.send('find_all_usuarios', {});
+    return this.client.send({ cmd: 'obtener_usuarios' }, {});
   }
 
-  // Usuario puede ver su perfil
-  // Admin puede ver cualquiera
   @Get(':id')
-  findOne(@Param('id') id: string, @Request() req: any) {
-    const isAdmin = req.user.role === 'admin';
-    const isOwner = req.user.sub === +id;
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  findOne(@Param('id') id: string) {
+    return this.client.send({ cmd: 'buscar_por_id' }, Number(id));
+  }
 
-    if (!isAdmin && !isOwner) {
-      throw new ForbiddenException('No autorizado');
-    }
-
-    return this.usuariosClient.send('find_one_usuario', { id: +id });
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  update(@Param('id') id: string, @Body() data: any) {
+    return this.client.send({ cmd: 'actualizar_perfil' }, { 
+      id: Number(id), 
+      datos: data 
+    });
   }
 }

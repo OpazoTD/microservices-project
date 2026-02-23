@@ -1,31 +1,41 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "client"
 }
 
-datasource db {
+datasource db { 
   provider = "postgresql"
+}
+enum Rol {
+  USER
+  ADMIN
 }
 
 model Usuario {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   nombre    String
-  email     String    @unique
+  email     String   @unique
   password  String
-  rol       String    @default("cliente")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  carritos  Carrito[]
+  rol       Rol      @default(USER)
+  cart      Cart?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Carrito {
-  id          Int      @id @default(autoincrement())
-  usuarioId   Int
-  productoId  Int
-  cantidad    Int      @default(1)
-  precioUnit  Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+model Cart {
+  id        Int        @id @default(autoincrement())
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id])
+  usuarioId Int        @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+}
 
-  @@unique([usuarioId, productoId])
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  cart       Cart     @relation(fields: [cartId], references: [id])
+  cartId     Int
+  productoId Int      // referencia externa a productos-ms
+  cantidad   Int
+  reservaId  Int?     // id de la Reserva en productos-ms
+  addedAt    DateTime @default(now())
 }

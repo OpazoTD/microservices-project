@@ -1,30 +1,36 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('Productos')
 @Controller('productos')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class ProductosController {
   constructor(
-    @Inject('PRODUCTOS_SERVICE')
-    private readonly productosClient: ClientProxy,
+    @Inject('PRODUCTOS_SERVICE') private readonly client: ClientProxy
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'Obtener todos los productos' })
   findAll() {
-    return this.productosClient.send('find_all_productos', {});
+    return this.client.send({ cmd: 'obtener_productos' }, {});
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Obtener producto por ID' })
   findOne(@Param('id') id: string) {
-    return this.productosClient.send('find_one_producto', { id: +id });
+    // IMPORTANTE: Convertir a número si tu DB usa IDs numéricos
+    return this.client.send({ cmd: 'buscar_producto_id' }, Number(id));
   }
 
   @Post()
-  create(@Body() createProductoDto: any) {
-    return this.productosClient.send('create_producto', createProductoDto);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'vendedor', 'ADMIN', 'VENDEDOR')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear nuevo producto' })
+  create(@Body() data: any) {
+    return this.client.send({ cmd: 'crear_producto' }, data);
   }
 }

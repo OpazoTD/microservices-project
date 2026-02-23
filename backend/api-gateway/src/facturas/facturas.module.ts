@@ -9,8 +9,8 @@ import { FacturasController } from './facturas.controller';
         name: 'FACTURAS_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: process.env.FACTURAS_MS_HOST || 'localhost',
-          port: Number(process.env.FACTURAS_MS_PORT) || 3003,
+          host: process.env.MS_INVOICE_HOST || 'facturas-ms',
+          port: Number(process.env.MS_INVOICE_PORT) || 3003,
         },
       },
     ]),

@@ -1,23 +1,43 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
+
+// Definimos la estructura del payload para evitar errores de dedo
+interface JwtPayload {
+  sub: number;
+  email: string;
+  role: string;
+  nombre?: string;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
+
+    // Validación preventiva: Si no hay secreto, la aplicación debe fallar al arrancar
+    if (!secret) {
+      throw new Error('JWT_SECRET no encontrado en las variables de entorno');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'mi_super_secreto_jwt_2024',
+      secretOrKey: secret, // Ahora TypeScript sabe que 'secret' es string
     });
   }
 
-  async validate(payload: { sub: number; email: string; rol: string }) {
-    // Este objeto se inyecta en request.user
+  async validate(payload: JwtPayload) {
+    if (!payload.sub) {
+      throw new UnauthorizedException('Token no contiene información de usuario válida');
+    }
+
     return {
-      userId: payload.sub,
+      id: payload.sub,
       email: payload.email,
-      rol: payload.rol,
+      nombre: payload.nombre,
+      role: payload.role,
     };
   }
 }

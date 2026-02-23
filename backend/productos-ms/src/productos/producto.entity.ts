@@ -1,34 +1,26 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn } from 'typeorm';
+import { Reserva } from './reserva.entity';
 
 @Entity('productos')
 export class Producto {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 200 })
+  @Column()
   nombre: string;
 
-  @Column('text')
+  @Column({ type: 'text', nullable: true })
   descripcion: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   precio: number;
 
   @Column({ default: 0 })
-  stock: number;
+  stock: number; 
 
-  @Column({ default: 0 })
-  stockReservado: number;
-
-  @Column({ length: 100, nullable: true })
-  categoria: string;
-
-  @Column({ default: true })
-  activo: boolean;
+  @OneToMany(() => Reserva, (reserva) => reserva.producto)
+  reservas: Reserva[];
 
   @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }

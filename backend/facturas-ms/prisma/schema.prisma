@@ -7,19 +7,15 @@ datasource db {
 }
 
 model Factura {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
   usuarioId   String
   nombreUser  String
   emailUser   String
-
   productos   ProductoFactura[]
-
   total       Float
-  estado      String    @default("completada")
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  estado      String            @default("completada")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 type ProductoFactura {

@@ -1,42 +1,23 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProductosModule } from './productos/productos.module';
 import { FacturasModule } from './facturas/facturas.module';
+import { CarritoModule } from './carrito/carrito.module'; // Importa tu nueva carpeta
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
-    ClientsModule.register([
-      {
-        name: 'USUARIOS_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: process.env.USUARIOS_MS_HOST || 'localhost',
-          port: parseInt(process.env.USUARIOS_MS_PORT || '3001', 10),
-        },
-      },
-      {
-        name: 'PRODUCTOS_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: process.env.PRODUCTOS_MS_HOST || 'localhost',
-          port: parseInt(process.env.PRODUCTOS_MS_PORT || '3002', 10),
-        },
-      },
-      {
-        name: 'FACTURAS_SERVICE',
-        transport: Transport.TCP,
-        options: {
-          host: process.env.FACTURAS_MS_HOST || 'localhost',
-          port: parseInt(process.env.FACTURAS_MS_PORT || '3003', 10),
-        },
-      },
-    ]),
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     UsuariosModule,
     ProductosModule,
     FacturasModule,
+    CarritoModule,
   ],
+  controllers: [AppController], 
+  providers: [AppService],
 })
 export class AppModule {}

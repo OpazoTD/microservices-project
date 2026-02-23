@@ -43,7 +43,8 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=${TCP_PORT:-3002}
+ENV PORT=3002
+ENV MS_TCP_PORT=3004
 
 # Instalar solo dependencias de producción
 COPY package*.json ./
@@ -52,6 +53,6 @@ RUN npm ci --omit=dev
 # Copiar build
 COPY --from=builder /app/dist ./dist
 
-EXPOSE ${PORT}
+EXPOSE 3002 3004
 
 CMD ["node", "dist/main.js"]

@@ -6,33 +6,29 @@ import { ProductosService } from './productos.service';
 export class ProductosController {
   constructor(private readonly productosService: ProductosService) {}
 
-  @MessagePattern('create_producto')
-  create(@Payload() data: any) {
-    return this.productosService.create(data);
-  }
-
-  @MessagePattern('find_all_productos')
+  @MessagePattern({ cmd: 'obtener_productos' })
   findAll() {
     return this.productosService.findAll();
   }
 
-  @MessagePattern('find_one_producto')
-  findOne(@Payload() data: { id: number }) {
-    return this.productosService.findOne(data.id);
+  @MessagePattern({ cmd: 'buscar_producto_id' })
+  findOne(@Payload() id: number) {
+    return this.productosService.findOne(id);
   }
 
-  @MessagePattern('reservar_stock')
-  reservar(@Payload() data: { productoId: number; cantidad: number }) {
-    return this.productosService.reservarStock(data.productoId, data.cantidad);
+  @MessagePattern({ cmd: 'crear_producto' })
+  create(@Payload() data: any) {
+    // Aquí recibes el objeto del producto
+    return this.productosService.create(data);
   }
 
-  @MessagePattern('confirmar_compra_stock')
-  confirmar(@Payload() data: { productoId: number; cantidad: number }) {
-    return this.productosService.confirmarCompra(data.productoId, data.cantidad);
+  @MessagePattern({ cmd: 'reservar_stock' })
+  reservarStock(@Payload() data: { productoId: number; usuarioId: number; cantidad: number }) {
+    return this.productosService.reservarStock(data.productoId, data.usuarioId, data.cantidad);
   }
 
-  @MessagePattern('liberar_reserva')
-  liberar(@Payload() data: { productoId: number; cantidad: number }) {
-    return this.productosService.liberarReserva(data.productoId, data.cantidad);
+  @MessagePattern({ cmd: 'confirmar_compra' })
+  confirmarCompra(@Payload() data: { reservaId: number }) {
+    return this.productosService.confirmarCompra(data.reservaId);
   }
 }

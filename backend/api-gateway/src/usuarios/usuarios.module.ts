@@ -1,23 +1,38 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsuariosController } from './usuarios.controller';
+import { ServicioUsuarios } from './usuarios.service';
 
 @Module({
   imports: [
-    ClientsModule.register([
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET') || 'mi_super_secreto_jwt_2026',
+        signOptions: { expiresIn: '24h' },
+      }),
+    }),
+    ClientsModule.registerAsync([
       {
-        name: 'USUARIOS_SERVICE', // Nombre para identificar el microservicio internamente
-        transport: Transport.TCP,
-        options: {
-          // Si corres en Docker, el host es el nombre del servicio en docker-compose
-          // Si corres local (npm run start), usa 'localhost'
-          host: process.env.USUARIOS_MS_HOST || 'localhost',
-          port: Number(process.env.USUARIOS_MS_PORT) || 3001,
-        },
+        name: 'USUARIOS_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: config.get<string>('MS_USER_HOST', 'usuarios-ms'),
+            port: config.get<number>('MS_USER_PORT', 3001),
+          },
+        }),
       },
     ]),
   ],
   controllers: [UsuariosController],
-  providers: [],
+  providers: [ServicioUsuarios],
+  exports: [ServicioUsuarios],
 })
 export class UsuariosModule {}

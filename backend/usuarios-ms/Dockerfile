@@ -1,36 +1,37 @@
 # ---------- BUILD STAGE ----------
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 
-# Instalar dependencias
-COPY package*.json ./
-RUN npm ci
+ARG DATABASE_URL=postgresql://admin:admin123@postgres:5432/usuarios_db
+ENV DATABASE_URL=$DATABASE_URL
 
-# Copiar todo el código
+COPY package*.json ./
+RUN npm install prisma@7.4.1 @prisma/client@7.4.1 --save-exact --legacy-peer-deps
+RUN npm install --legacy-peer-deps
+
 COPY . .
 
-# Generar cliente de Prisma y build de NestJS
-RUN npx prisma generate
-RUN npm run build && ls -la dist/
+RUN ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
+
+RUN npm run build
+
 # ---------- PRODUCTION STAGE ----------
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl busybox-extras
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=${TCP_PORT:-3001}
-#Herramienta para hacer health checks con TCP (usada por Docker Compose)
-RUN apk add --no-cache busybox-extras
-# Instalar solo dependencias de producción
+
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install prisma@7.4.1 @prisma/client@7.4.1 --save-exact --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
-# Copiar build
 COPY --from=builder /app/dist ./dist
-
-# Copiar Prisma
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-EXPOSE ${PORT}
+ENV PORT=3001
+EXPOSE 3001
 
-CMD ["sh", "-c", "ls -la dist/ && node dist/main.js"]
+CMD ["node", "dist/src/main.js"]
