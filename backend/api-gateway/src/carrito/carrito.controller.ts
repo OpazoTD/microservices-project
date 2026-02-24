@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CarritoService } from './carrito.service';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { FinalizarCompraDto } from './dto/finalizar-compra.dto';
 
 @ApiTags('Carrito')
 @ApiBearerAuth()
@@ -11,7 +12,7 @@ export class CarritoController {
   constructor(private readonly carritoService: CarritoService) {}
 
   @Post('agregar')
-  @ApiOperation({ summary: 'Reserva stock y agrega producto al carrito temporal' })
+  @ApiOperation({ summary: 'Reserva stock por 3 días y agrega producto al carrito temporal' })
   async agregarItem(@Request() req, @Body() body: { productoId: number; cantidad: number }) {
     // Extraemos el ID del usuario del token JWT para mayor seguridad
     const usuarioId = req.user.id; 
@@ -22,7 +23,7 @@ export class CarritoController {
 
   @Post('comprar')
   @ApiOperation({ summary: 'Finaliza la compra y genera la factura' })
-  async finalizarCompra(@Request() req, @Body() carritoData: any) {
+  async finalizarCompra(@Request() req, @Body() carritoData: FinalizarCompraDto) {
     // Este método enviaría todo el contenido del carrito a facturas-ms
     const dataCompleta = { 
       ...carritoData, 

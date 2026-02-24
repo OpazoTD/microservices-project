@@ -57,6 +57,37 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Usuario Administrador
+
+### Promover usuario a ADMIN
+
+Para promover el usuario `admin@correo.com` a rol ADMIN, puedes usar uno de los siguientes métodos:
+
+#### Opción 1: Script PowerShell (Windows)
+```powershell
+.\scripts\promote-admin.ps1
+```
+
+#### Opción 2: Script Bash (Linux/Mac)
+```bash
+bash scripts/promote-admin.sh
+```
+
+#### Opción 3: SQL Directo
+```bash
+docker exec ms-postgres psql -U admin -d usuarios_db -f prisma/seeds/admin-user.sql
+```
+
+### Credenciales por defecto
+
+```
+Email: admin@correo.com
+Password: admin1234
+Rol: ADMIN
+```
+
+> **Nota:** Asegúrate de cambiar la contraseña en producción.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

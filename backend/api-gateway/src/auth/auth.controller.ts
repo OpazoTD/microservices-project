@@ -1,5 +1,5 @@
 import { 
-  Controller, Post, Body, Get, UseGuards, Request, Inject, HttpStatus 
+  Controller, Post, Body, Get, Put, UseGuards, Request, Inject, HttpStatus 
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
@@ -10,7 +10,8 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { IniciarSesionDto } from './dto/iniciar-sesion.dto';
 // Nota: RegistrarUsuarioDto suele estar en el módulo de usuarios, 
 // pero si lo necesitas aquí, asegúrate de que el archivo exista en auth/dto/
-import { RegistrarUsuarioDto } from '../usuarios/dto/registrar-usuario.dto'; 
+import { RegistrarUsuarioDto } from '../usuarios/dto/registrar-usuario.dto';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto'; 
 
 @ApiTags('🔐 Autenticación')
 @Controller('auth')
@@ -23,7 +24,7 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ summary: 'Registro de nuevo usuario' })
   async register(@Body() dto: RegistrarUsuarioDto) {
-    return this.usuariosClient.send({ cmd: 'crear_usuario' }, dto);
+    return this.authService.register(dto);
   }
 
   @Post('login')
@@ -36,7 +37,18 @@ export class AuthController {
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
   getProfile(@Request() req: any) {
     return req.user;
+  }
+
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar perfil del usuario autenticado' })
+  async updateProfile(@Request() req: any, @Body() dto: ActualizarPerfilDto) {
+    // El usuario solo puede actualizar su propio perfil
+    const userId = req.user.id;
+    return this.authService.updateProfile(userId, dto);
   }
 }

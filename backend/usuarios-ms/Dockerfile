@@ -34,4 +34,4 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 ENV PORT=3001
 EXPOSE 3001
 
-CMD ["node", "dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]

@@ -6,14 +6,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    const databaseUrl = process.env.DATABASE_URL ?? 'mongodb://admin:admin123@mongo:27017/facturas_db?authSource=admin';
+    process.env.DATABASE_URL ??= 'mongodb://admin:admin123@mongodb:27017/facturas_db?authSource=admin&replicaSet=rs0';
     
     super({
-      datasources: {
-        db: {
-          url: databaseUrl,
-        },
-      },
       log: ['query', 'error', 'warn'],
     });
   }
@@ -27,7 +22,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       throw error;
     }
   }
-
+  
   async onModuleDestroy() {
     await this.$disconnect();
     this.logger.log('🔌 Desconectado de MongoDB');

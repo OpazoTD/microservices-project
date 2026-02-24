@@ -37,17 +37,28 @@ services:
   mongodb:
     image: mongo:7.0
     container_name: ms-mongodb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27018:27017"
     networks:
       - ms-network
     healthcheck:
-      test: ["CMD", "mongosh", "-u", "admin", "-p", "admin123", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       retries: 5
+
+  mongo-init:
+    image: mongo:7.0
+    container_name: ms-mongodb-init
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: >
+      sh -c "mongosh --host mongodb:27017 --quiet --eval
+      \"try { rs.status().ok } catch (e) { rs.initiate({_id: 'rs0', members:[{ _id:0, host:'mongodb:27017'}]}) }\""
+    networks:
+      - ms-network
+    restart: "no"
 
   # Microservicios con puertos TCP corregidos
   usuarios-ms:
@@ -87,7 +98,7 @@ services:
       build: ./backend/facturas-ms
       container_name: ms-facturas
       environment:
-        DATABASE_URL: "mongodb://admin:admin123@mongodb:27017/facturas_db?authSource=admin"
+        DATABASE_URL: "mongodb://mongodb:27017/facturas_db?replicaSet=rs0"
         PRODUCTOS_MS_HOST: productos-ms
         TCP_PORT: 3003
         NODE_ENV: production
@@ -96,6 +107,8 @@ services:
       depends_on:
         mongodb: 
           condition: service_healthy
+        mongo-init:
+          condition: service_completed_successfully
       networks:
         - ms-network
 

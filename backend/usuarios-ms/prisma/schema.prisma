@@ -17,6 +17,7 @@ model Usuario {
   email     String   @unique
   password  String
   rol       Rol      @default(USER)
+  activo    Boolean  @default(true)
   cart      Cart?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

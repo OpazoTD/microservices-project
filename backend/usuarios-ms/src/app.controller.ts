@@ -43,4 +43,9 @@ export class UsuariosController {
   async actualizar(@Payload() data: { id: number, datos: any }) {
     return this.usuariosService.update(data.id, data.datos);
   }
+
+  @MessagePattern({ cmd: 'actualizar_estado' })
+  async actualizarEstado(@Payload() data: { id: number, activo: boolean }) {
+    return this.usuariosService.updateEstado(data.id, data.activo);
+  }
 }

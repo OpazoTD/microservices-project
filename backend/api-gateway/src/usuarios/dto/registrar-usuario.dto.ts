@@ -1,5 +1,6 @@
 import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class RegistrarUsuarioDto {
   @ApiProperty({ 
@@ -22,6 +23,7 @@ export class RegistrarUsuarioDto {
     description: 'Contraseña de acceso (mínimo 6 caracteres)',
     example: '123456' 
   })
+  @Transform(({ value, obj }) => value ?? obj?.password)
   @IsString()
   @MinLength(6, { message: 'La clave debe tener al menos 6 caracteres' })
   @IsNotEmpty()

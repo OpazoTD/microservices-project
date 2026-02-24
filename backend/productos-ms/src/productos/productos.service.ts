@@ -17,8 +17,24 @@ export class ProductosService {
       descripcion: data.descripcion,
       precio: data.precio,
       stock: data.stock,
+      imagenUrl: data.imagenUrl,
     });
     return await this.productosRepo.save(nuevoProducto);
+  }
+
+  async update(id: number, data: any) {
+    const producto = await this.productosRepo.findOne({ where: { id } });
+    if (!producto) throw new NotFoundException('Producto no encontrado');
+
+    Object.assign(producto, data);
+    return await this.productosRepo.save(producto);
+  }
+
+  async delete(id: number) {
+    const producto = await this.productosRepo.findOne({ where: { id } });
+    if (!producto) throw new NotFoundException('Producto no encontrado');
+
+    return await this.productosRepo.remove(producto);
   }
 
   async findAll() {
@@ -54,7 +70,7 @@ export class ProductosService {
         productoId,
         usuarioId,
         cantidad,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos de reserva
+        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 días de reserva
       });
 
       return manager.save(reserva);

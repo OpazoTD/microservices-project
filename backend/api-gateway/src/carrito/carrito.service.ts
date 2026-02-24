@@ -12,7 +12,7 @@ export class CarritoService {
   async agregarAlCarrito(usuarioId: string, item: { productoId: number; cantidad: number }) {
     try {
       // 1. Solicitar reserva en productos-ms (TCP Puerto 3004)
-      // Esto devuelve un reservaId y asegura el stock por 15 min.
+      // Esto devuelve un reservaId y asegura el stock por 3 días.
       const reserva = await firstValueFrom(
         this.productosClient.send(
           { cmd: 'reservar_stock' }, 

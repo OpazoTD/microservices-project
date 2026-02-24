@@ -10,6 +10,15 @@ export class ProductoDto {
   nombre: string;
 
   @ApiProperty({ 
+    example: 'Laptop HP 15.6 pulgadas, procesador Intel i7', 
+    description: 'Descripción detallada del producto',
+    required: false 
+  })
+  @IsString({ message: 'La descripción debe ser una cadena de texto' })
+  @IsOptional()
+  descripcion?: string;
+
+  @ApiProperty({ 
     example: 599.99, 
     description: 'Precio unitario en la moneda local' 
   })

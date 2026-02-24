@@ -22,6 +22,17 @@ export class ProductosController {
     return this.productosService.create(data);
   }
 
+  @MessagePattern({ cmd: 'actualizar_producto' })
+  update(@Payload() data: { id: number } & any) {
+    const { id, ...updateData } = data;
+    return this.productosService.update(id, updateData);
+  }
+
+  @MessagePattern({ cmd: 'eliminar_producto' })
+  delete(@Payload() id: number) {
+    return this.productosService.delete(id);
+  }
+
   @MessagePattern({ cmd: 'reservar_stock' })
   reservarStock(@Payload() data: { productoId: number; usuarioId: number; cantidad: number }) {
     return this.productosService.reservarStock(data.productoId, data.usuarioId, data.cantidad);

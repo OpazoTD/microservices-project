@@ -1,6 +1,6 @@
 # Facturas Microservice - Prisma MongoDB Setup
 
-Este microservicio usa **Prisma 7.4.1** con **MongoDB** para gestionar las facturas.
+Este microservicio usa **Prisma 6.19.2** con **MongoDB** para gestionar las facturas.
 
 ## 🗄️ Base de Datos
 
@@ -15,7 +15,6 @@ Este microservicio usa **Prisma 7.4.1** con **MongoDB** para gestionar las factu
 
 ### Archivos principales:
 - `prisma/schema.prisma` - Define el modelo de datos
-- `prisma.config.ts` - Configuración de Prisma
 - `src/prisma.service.ts` - Servicio NestJS para Prisma
 
 ### Schema de Factura
@@ -79,7 +78,7 @@ npm run db:init
 ## 🐳 Docker
 
 El Dockerfile ya está configurado para:
-- Instalar Prisma 7.4.1
+- Instalar Prisma 6.19.2
 - Generar el cliente durante el build
 - Copiar los archivos necesarios al contenedor de producción
 
@@ -102,8 +101,10 @@ docker compose up -d --build facturas-ms
 Asegúrate de tener configurado en tu `.env` o `docker-compose.yml`:
 
 ```env
-DATABASE_URL=mongodb://admin:admin123@mongo:27017/facturas_db?authSource=admin
+DATABASE_URL=mongodb://admin:admin123@mongodb:27017/facturas_db?authSource=admin
 ```
+
+Con Prisma 6.19.2 para MongoDB, **define `url` dentro de `prisma/schema.prisma`** usando `env("DATABASE_URL")`.
 
 ## 🔍 Verificación
 
@@ -127,7 +128,7 @@ Para verificar que todo funciona correctamente:
 ## 🐛 Troubleshooting
 
 ### Error: Cannot connect to MongoDB
-- Verifica que el contenedor `mongo` esté corriendo
+- Verifica que el contenedor `mongodb` esté corriendo
 - Verifica las credenciales en `DATABASE_URL`
 - Verifica que el puerto 27017 no esté bloqueado
 
