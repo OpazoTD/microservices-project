@@ -14,7 +14,7 @@ import { ProductosController } from './productos.controller';
         useFactory: (config: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: config.get<string>('MS_PRODUCT_HOST', '127.0.0.1'),
+            host: config.get<string>('MS_PRODUCT_HOST', 'productos-ms'),
             port: config.get<number>('MS_PRODUCT_PORT', 3004),
           },
         }),

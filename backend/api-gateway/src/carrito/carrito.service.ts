@@ -38,10 +38,18 @@ export class CarritoService {
   }
 
   async finalizarCompra(datosCarrito: any) {
-    // Este método enviará todo el array de productos a facturas-ms (Puerto 3005)
-    // tal como definimos en el procesarCompra de tu AppService anterior.
-    return await firstValueFrom(
-      this.facturasClient.send({ cmd: 'crear_factura' }, datosCarrito)
-    );
+    try {
+      // Este método enviará todo el array de productos a facturas-ms (Puerto 3005)
+      // tal como definimos en el procesarCompra de tu AppService anterior.
+      const result = await firstValueFrom(
+        this.facturasClient.send({ cmd: 'crear_factura' }, datosCarrito)
+      );
+      return result;
+    } catch (error) {
+      console.error('❌ Error al finalizar compra:', error);
+      throw new BadRequestException(
+        error?.message || 'Error al procesar la compra. Por favor, intenta nuevamente.'
+      );
+    }
   }
 }

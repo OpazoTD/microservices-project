@@ -6,7 +6,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    process.env.DATABASE_URL ??= 'mongodb://admin:admin123@mongodb:27017/facturas_db?authSource=admin&replicaSet=rs0';
+    process.env.DATABASE_URL ??= 'mongodb://mongodb:27017/facturas_db?replicaSet=rs0';
     
     super({
       log: ['query', 'error', 'warn'],

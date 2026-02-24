@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
 postgres_data/
 mysql_data/
 mongo_data/

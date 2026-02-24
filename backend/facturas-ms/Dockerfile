@@ -30,6 +30,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# Regenerate Prisma client in production stage to ensure proper binary
+RUN ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
+
 ENV PORT=3003
 EXPOSE 3003
 

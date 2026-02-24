@@ -4,15 +4,15 @@ services:
     image: postgres:16
     container_name: ms-postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: usuarios_db
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_DB: ${POSTGRES_DB:-usuarios_db}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_EXTERNAL_PORT:-5433}:5432"
     networks:
       - ms-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d usuarios_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-usuarios_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,16 +21,16 @@ services:
     image: mysql:8.0
     container_name: ms-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: productos_db
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-productos_db}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-admin123}
     ports:
-      - "3307:3306"
+      - "${MYSQL_EXTERNAL_PORT:-3307}:3306"
     networks:
       - ms-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-padmin123"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD:-root123}"]
       interval: 5s
       retries: 5
 
@@ -39,7 +39,7 @@ services:
     container_name: ms-mongodb
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "27018:27017"
+      - "${MONGO_EXTERNAL_PORT:-27018}:27017"
     networks:
       - ms-network
     healthcheck:
@@ -65,10 +65,14 @@ services:
     build: ./backend/usuarios-ms
     container_name: ms-usuarios
     environment:
-      DATABASE_URL: "postgresql://admin:admin123@postgres:5432/usuarios_db"
-      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usuarios_db}"
+      NODE_ENV: ${NODE_ENV:-production}
+      AUTO_SEED_ADMIN: ${AUTO_SEED_ADMIN:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@correo.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin1234}
+      ADMIN_NAME: ${ADMIN_NAME:-Admin}
     ports:
-      - "3001:3001"  
+      - "${USUARIOS_EXTERNAL_PORT:-3001}:3001"
     depends_on:
       postgres: { condition: service_healthy }
     networks:
@@ -80,15 +84,15 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_USERNAME: admin
-      DB_PASSWORD: admin123
-      DB_DATABASE: productos_db
-      PORT: 3002
-      MS_TCP_PORT: 3004
-      NODE_ENV: production
+      DB_USERNAME: ${MYSQL_USER:-admin}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-admin123}
+      DB_DATABASE: ${MYSQL_DATABASE:-productos_db}
+      PORT: ${PRODUCTOS_HTTP_PORT:-3002}
+      MS_TCP_PORT: ${PRODUCTOS_TCP_PORT:-3004}
+      NODE_ENV: ${NODE_ENV:-production}
     ports:
-      - "3002:3002"
-      - "3004:3004"
+      - "${PRODUCTOS_HTTP_PORT:-3002}:3002"
+      - "${PRODUCTOS_TCP_PORT:-3004}:3004"
     depends_on:
       mysql: { condition: service_healthy }
     networks:
@@ -100,10 +104,10 @@ services:
       environment:
         DATABASE_URL: "mongodb://mongodb:27017/facturas_db?replicaSet=rs0"
         PRODUCTOS_MS_HOST: productos-ms
-        TCP_PORT: 3003
-        NODE_ENV: production
+        TCP_PORT: ${FACTURAS_TCP_PORT:-3003}
+        NODE_ENV: ${NODE_ENV:-production}
       ports:
-        - "3003:3003"
+        - "${FACTURAS_TCP_PORT:-3003}:3003"
       depends_on:
         mongodb: 
           condition: service_healthy
@@ -117,7 +121,7 @@ services:
     build: ./backend/api-gateway
     container_name: ms-gateway
     ports:
-      - "3000:3000"
+      - "${GATEWAY_PORT:-3000}:3000"
     environment:
       MS_USER_HOST: usuarios-ms
       MS_USER_PORT: 3001
@@ -125,7 +129,7 @@ services:
       MS_PRODUCT_PORT: 3004  
       MS_INVOICE_HOST: facturas-ms
       MS_INVOICE_PORT: 3003  
-      JWT_SECRET: "tu_clave_super_secreta"
+      JWT_SECRET: ${JWT_SECRET:-tu_clave_super_secreta}
     depends_on:
       - usuarios-ms
       - productos-ms

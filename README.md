@@ -60,14 +60,26 @@ cd facturas-ms && npm install && cd ..
 
 > **Nota:** Si solo usarás Docker, este paso es opcional ya que Docker instalará las dependencias automáticamente.
 
-### 3. Construir e Iniciar los Contenedores
+### 3. Crear archivo de entorno (recomendado para otra PC)
+
+```bash
+# PowerShell
+Copy-Item .env.example .env
+
+# Bash
+cp .env.example .env
+```
+
+> **Importante:** Ajusta puertos o credenciales en `.env` si tu máquina ya usa `3000`, `5433`, `3307` o `27018`.
+
+### 4. Construir e Iniciar los Contenedores
 
 ```bash
 # Desde la raíz del proyecto
 docker-compose up --build -d
 ```
 
-### 4. Verificar que los Contenedores Estén Corriendo
+### 5. Verificar que los Contenedores Estén Corriendo
 
 ```bash
 docker-compose ps
@@ -78,15 +90,21 @@ Deberías ver 7 contenedores corriendo:
 - `ms-usuarios`
 - `ms-productos`
 - `ms-facturas`
-- `pg_usuarios` (PostgreSQL - Puerto 5432)
-- `mysql_productos` (MySQL - Puerto 3306)
-- `mongo_facturas` (MongoDB - Puerto 27017)
+- `ms-postgres` (PostgreSQL - Puerto interno 5432 / externo 5433)
+- `ms-mysql` (MySQL - Puerto interno 3306 / externo 3307)
+- `ms-mongodb` (MongoDB - Puerto interno 27017 / externo 27018)
 
-### 5. Verificar la API
+### 6. Verificar la API
 
 Abre tu navegador en:
 - **API Gateway:** http://localhost:3000/api
 - **Swagger Docs:** http://localhost:3000/docs
+
+Credenciales admin por defecto (auto-creadas al iniciar `usuarios-ms`):
+- **Email:** `admin@correo.com`
+- **Password:** `admin1234`
+
+> Puedes cambiarlas en `.env` con `ADMIN_EMAIL`, `ADMIN_PASSWORD` y `ADMIN_NAME`.
 
 ---
 
@@ -505,16 +523,21 @@ curl -X PUT http://localhost:3000/api/auth/profile \
 
 ### Flujo de Administrador
 
-#### 1️⃣ Promover Usuario a Admin (Vía Base de Datos)
+#### 1️⃣ Login con Admin (auto-creado al iniciar)
+
+Por defecto, el sistema crea este usuario al arrancar:
+- `admin@correo.com` / `admin1234`
+
+Si desactivaste `AUTO_SEED_ADMIN` o quieres promover otro usuario manualmente:
 
 **En Windows (PowerShell):**
 ```powershell
-docker exec -it pg_usuarios psql -U postgres -d usuarios_db -c "UPDATE \"Usuario\" SET rol = 'ADMIN' WHERE email = 'admin@correo.com';"
+docker exec -it ms-postgres psql -U admin -d usuarios_db -c "UPDATE \"Usuario\" SET rol = 'ADMIN' WHERE email = 'admin@correo.com';"
 ```
 
 **En Linux/Mac:**
 ```bash
-docker exec -it pg_usuarios psql -U postgres -d usuarios_db -c "UPDATE \"Usuario\" SET rol = 'ADMIN' WHERE email = 'admin@correo.com';"
+docker exec -it ms-postgres psql -U admin -d usuarios_db -c "UPDATE \"Usuario\" SET rol = 'ADMIN' WHERE email = 'admin@correo.com';"
 ```
 
 #### 2️⃣ Crear Producto

@@ -14,51 +14,69 @@ export class AppService {
 
   // ─── Procesar compra y generar factura ───────────────────────────────────────
   async procesarCompra(data: any) {
-    this.logger.log('📋 Procesando nueva factura/orden...');
-    this.logger.log('📦 Datos recibidos:', JSON.stringify(data, null, 2));
+    try {
+      this.logger.log('📋 Procesando nueva factura/orden...');
+      this.logger.log('📦 Datos recibidos:', JSON.stringify(data, null, 2));
 
-    // Validar que articulos existe y es un array
-    const articulos = data.articulos || data.productos || data.items || [];
-    
-    if (!Array.isArray(articulos) || articulos.length === 0) {
-      this.logger.error('❌ Error: No se recibieron artículos válidos');
-      throw new Error('Los artículos son requeridos y deben ser un array');
-    }
-
-    // Confirmar stock en Productos MS
-    for (const item of articulos) {
-      if (item.reservaId) {
-        await lastValueFrom(
-          this.productosClient.send(
-            { cmd: 'confirmar_compra_stock' },
-            { reservaId: item.reservaId },
-          ),
-        );
+      // Validar que articulos existe y es un array
+      const articulos = data.articulos || data.productos || data.items || [];
+      
+      if (!Array.isArray(articulos) || articulos.length === 0) {
+        this.logger.error('❌ Error: No se recibieron artículos válidos');
+        throw new Error('Los artículos son requeridos y deben ser un array');
       }
+
+      // Validar datos de usuario
+      if (!data.idUsuario && !data.usuarioId) {
+        this.logger.error('❌ Error: No se recibió ID de usuario');
+        throw new Error('El ID de usuario es requerido');
+      }
+
+      // Confirmar stock en Productos MS
+      for (const item of articulos) {
+        if (item.reservaId) {
+          try {
+            await lastValueFrom(
+              this.productosClient.send(
+                { cmd: 'confirmar_compra' },
+                { reservaId: item.reservaId },
+              ),
+            );
+          } catch (error) {
+            this.logger.error(`❌ Error al confirmar stock para reserva ${item.reservaId}:`, error);
+            throw new Error(`No se pudo confirmar el stock del producto ${item.nombre || item.productoId}`);
+          }
+        }
+      }
+
+      const productos = articulos.map((art: any) => ({
+        productoId: art.productoId?.toString() || art.id?.toString(),
+        nombre: art.nombre || art.name || 'Sin nombre',
+        cantidad: art.cantidad || art.quantity || 1,
+        precioUnit: art.precioUnit || art.precio || art.price || 0,
+        subtotal: (art.cantidad || art.quantity || 1) * (art.precioUnit || art.precio || art.price || 0),
+      }));
+
+      const total = data.montoTotal || data.total || this.calculateTotal(productos);
+
+      this.logger.log('💾 Intentando crear factura en la base de datos...');
+      const factura = await this.prisma.factura.create({
+        data: {
+          usuarioId: data.idUsuario?.toString() || data.usuarioId?.toString(),
+          nombreUser: data.nombreUser || data.nombreUsuario || 'Usuario',
+          emailUser: data.emailUser || data.emailUsuario || 'usuario@correo.com',
+          total,
+          productos,
+        },
+      });
+
+      this.logger.log(`✅ Factura creada exitosamente: ${factura.id}`);
+      return factura;
+    } catch (error) {
+      this.logger.error('❌ Error en procesarCompra:', error);
+      this.logger.error('Stack trace:', error.stack);
+      throw error;
     }
-
-    const productos = articulos.map((art: any) => ({
-      productoId: art.productoId?.toString() || art.id?.toString(),
-      nombre: art.nombre || art.name,
-      cantidad: art.cantidad || art.quantity || 1,
-      precioUnit: art.precioUnit || art.precio || art.price || 0,
-      subtotal: (art.cantidad || art.quantity || 1) * (art.precioUnit || art.precio || art.price || 0),
-    }));
-
-    const total = data.montoTotal || data.total || this.calculateTotal(productos);
-
-    const factura = await this.prisma.factura.create({
-      data: {
-        usuarioId: data.idUsuario?.toString() || data.usuarioId?.toString(),
-        nombreUser: data.nombreUser || data.nombreUsuario || 'Usuario',
-        emailUser: data.emailUser || data.emailUsuario || 'usuario@correo.com',
-        total,
-        productos,
-      },
-    });
-
-    this.logger.log(`✅ Factura creada: ${factura.id}`);
-    return factura;
   }
 
   // ─── Facturas de un usuario ──────────────────────────────────────────────────
